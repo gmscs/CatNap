@@ -1,0 +1,209 @@
+<!doctype html> 
+<html lang="en"> 
+<head> 
+    <meta charset="UTF-8" />
+    <title>CatNap Prototype</title>
+    <script src="//cdn.jsdelivr.net/npm/phaser@3.11.0/dist/phaser.js"></script>
+    <style type="text/css">
+        body {
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+
+<script type="text/javascript">
+
+    var config = {
+        type: Phaser.AUTO,
+        width: 800,
+        height: 600,
+        physics: {
+            default: 'arcade',
+            arcade: {
+                gravity: { y: 300 },
+                debug: false
+            }
+        },
+        scene: {
+            preload: preload,
+            create: create,
+            update: update
+        }
+    };
+
+    var mouse;
+    var cat;
+    var cheeses;
+    var boxes;
+    var platforms;
+    var cursors;
+    var score = 0;
+    var scoreText;
+    var timeText;
+    var hiding = false
+    var catLooking = false
+    var delaytime;
+
+    var game = new Phaser.Game(config);
+
+    function preload ()
+    {
+        this.load.image('room', 'assets/room.png');
+        this.load.image('ground', 'assets/ground.png');
+        this.load.image('sleeping_cat', 'assets/sleepingcat.png')
+        this.load.image('evil', 'assets/evil.png')
+        this.load.image('platform', 'assets/platform.png');
+        this.load.image('box', 'assets/box.png')
+        this.load.image('cheese', 'assets/cheese.png');
+        this.load.image('mouse', 'assets/mouse.png');
+        this.load.image('bell', 'assets/bell.png');
+    }
+
+    function create ()
+    {
+        this.add.image(400, 300, 'room');
+        cat = this.add.image(550, 275, 'sleeping_cat');
+
+        //delaytime = 10000;
+        delaytime = random(5000, 15000)
+        console.log(delaytime)
+
+        timedEvent = this.time.addEvent({ delay: delaytime, timeScale: 1.0, callback: onTimerEvent, callbackScope: this, loop: true });
+
+        platforms = this.physics.add.staticGroup();
+
+        platforms.create(400, 568, 'ground').setScale(2).refreshBody();
+
+        platforms.create(550, 400, 'platform');
+        platforms.create(750, 180, 'platform');
+        platforms.create(350, 160, 'platform');
+        platforms.create(150, 330, 'platform');
+
+        mouse = this.physics.add.sprite(100, 450, 'mouse');
+
+        mouse.setBounce(0.2);
+        mouse.setCollideWorldBounds(true);
+        cursors = this.input.keyboard.createCursorKeys();
+
+        boxes = this.physics.add.group({
+            key: "box",
+            repeat: 3,
+            setXY: { x: 200, y: 0, stepX: 240}
+            
+        });
+
+        cheeses = this.physics.add.group({
+            key: 'cheese',
+            repeat: 11,
+            setXY: { x: 12, y: 0, stepX: 70 }
+        });
+
+        cheeses.children.iterate(function (child) {
+
+            child.setBounceY(Phaser.Math.FloatBetween(0.4, 0.8));
+
+        });
+
+        scoreText = this.add.text(16, 16, 'score: 0', { fontSize: '32px', fill: '#000' });
+        timeText = this.add.text(16, 59, 'time', { fontSize: '32px', fill: '#FF0000' });
+
+        bells = this.physics.add.group({
+            key: "bell",
+            repeat: 2,
+            setXY: { x: 120, y: 0, stepX: 205}
+            
+        });
+
+        this.physics.add.collider(mouse, platforms);
+        this.physics.add.collider(cheeses, platforms);
+        this.physics.add.collider(bells, platforms);
+        this.physics.add.collider(boxes, platforms);
+
+        this.physics.add.overlap(mouse, cheeses, collectCheese, null, this);
+        this.physics.add.collider(mouse, bells, hitBell, null, this);
+        this.physics.add.overlap(mouse, boxes, hide, null, this);
+    
+    }
+
+    function update ()
+    {
+        delaytime = random(5000, 15000)
+        console.log(delaytime)
+
+        if (cursors.left.isDown)
+        {
+            mouse.setVelocityX(-300);
+            mouse.play('left', true);
+        }
+        else if (cursors.right.isDown)
+        {
+            mouse.setVelocityX(300);
+            mouse.play('right', true);
+
+        }
+        else
+        {
+            mouse.setVelocityX(0);
+            mouse.play('turn');
+        }
+
+        if (cursors.up.isDown && mouse.body.touching.down)
+        {
+            mouse.setVelocityY(-330);
+            mouse.play('turn');
+        }
+        if (this.physics.overlap(mouse, boxes, hide, null, this) ){
+            hiding = true
+        }
+        if (!this.physics.overlap(mouse, boxes, hide, null, this)  ){
+            hiding = false
+        }
+        timeText.setText('Time: ' + (10 - timedEvent.getProgress().toString().substr(0, 3) * 10));
+
+    }
+
+    function collectCheese (mouse, cheese)
+    {
+        cheese.disableBody(true, true);
+
+        score += 10;
+        scoreText.setText('Score: ' + score);
+    }
+
+    function onTimerEvent ()
+    {
+        evil = this.add.image(550, 275, 'evil');
+        catLooking = true
+        console.log("Cat is looking")
+
+        if (hiding === true) {
+            setTimeout(function() {evil.destroy()}, 2000)
+            catLooking = false
+            console.log("Cat is not looking")
+        }
+
+        if (hiding === false) {
+            this.physics.pause();
+        }
+        hiding = false
+    }
+
+    function hide (mouse, box) {
+        //console.log('Hiding')
+    }
+
+    function hitBell (mouse, bell)
+{
+    evil = this.add.image(550, 275, 'evil');
+    this.physics.pause();
+
+    mouse.setTint(0xff0000);
+    gameOver = true;
+}
+    const random = (min, max) => Math.floor(Math.random() * (max - min)) + min;
+
+</script>
+
+</body>
+</html>

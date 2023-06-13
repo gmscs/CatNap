@@ -1,0 +1,266 @@
+<!doctype html> 
+<html lang="en"> 
+<head> 
+    <meta charset="UTF-8" />
+    <title>CatNap Prototype</title>
+    <script src="phaser.min.js"></script>
+    <style type="text/css">
+        body {
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+
+<script type="text/javascript">
+
+    var config = {
+        type: Phaser.AUTO,
+        width: 800,
+        height: 600,
+        physics: {
+            default: 'arcade',
+            arcade: {
+                gravity: { y: 300 },
+                debug: false
+            }
+        },
+        scene: {
+            preload: preload,
+            create: create,
+            update: update
+        }
+    };
+
+    var mouse;
+    var cheeses;
+    var platforms;
+    var cursors;
+    var score = 0;
+    var scoreText;
+    var shieldText;
+    var lifeText;
+    var jelloText;
+    var shield_count = 0;
+    var life_count = 0;
+    var jello_count = 0;
+    var enableKey = true;
+    var doorSpawned = false;
+
+    var game = new Phaser.Game(config);
+
+    function preload ()
+    {
+        this.load.image('room', 'assets/room.png');
+        this.load.image('ground', 'assets/ground.png');
+        this.load.image('platform', 'assets/platform.png');
+        this.load.image('cheese', 'assets/cheese.png');
+        this.load.image('mouse', 'assets/mouse.png');
+        this.load.image('bell', 'assets/bell.png');
+        this.load.image('shield', 'assets/green_star.png');
+        this.load.image('hideyobject', 'assets/books.png');
+        this.load.image('heart', 'assets/heart.png');
+        this.load.image('door', 'assets/door.png');
+        this.load.image('red_star', 'assets/red_star.png')
+        this.load.image('jello', 'assets/jello.png');
+    }
+
+    function create ()
+    {
+        this.add.image(400, 300, 'room');
+
+        this.keys = this.input.keyboard.addKeys({
+           s: Phaser.Input.Keyboard.KeyCodes.S, //shield
+           j: Phaser.Input.Keyboard.KeyCodes.J  //jello
+        });
+
+        platforms = this.physics.add.staticGroup();
+
+        platforms.create(400, 568, 'ground').setScale(2).refreshBody();
+
+        platforms.create(550, 400, 'platform');
+        platforms.create(750, 180, 'platform');
+        platforms.create(350, 160, 'platform');
+        platforms.create(150, 330, 'platform');
+
+        mouse = this.physics.add.sprite(100, 450, 'mouse');
+
+        mouse.setBounce(0.2);
+        mouse.setCollideWorldBounds(true);
+        cursors = this.input.keyboard.createCursorKeys();
+
+        cheeses = this.physics.add.group({
+            key: 'cheese',
+            repeat: 11,
+            setXY: { x: 12, y: 0, stepX: 70 }
+        });
+
+        cheeses.children.iterate(function (child) {
+
+            child.setBounceY(Phaser.Math.FloatBetween(0.4, 0.8));
+
+        });
+
+        scoreText = this.add.text(16, 16, 'Score: 0', { fontSize: '32px', fill: '#000' });
+        shieldText = this.add.text(16, 48, 'Shields: 0', { fontSize: '32px', fill: '#000' });
+        lifeText = this.add.text(16, 80, 'Lives: 0', { fontSize: '32px', fill: '#000' });
+        jelloText = this.add.text(16, 112, 'Jellos: 0', { fontSize: '32px', fill: '#000' });
+
+        bells = this.physics.add.group({
+            key: "bell",
+            repeat: 2,
+            setXY: { x: 120, y: 0, stepX: 205}
+            
+        });
+
+        shields = this.physics.add.group({
+            key: "shield",
+            repeat: 2,
+            setXY: { x: 50, y: 0, stepX: 100}
+        });
+
+        hearts = this.physics.add.group({
+            key: "heart",
+            repeat: 1,
+            setXY: {x: 200, y: 0, stepX: 250}
+        });
+
+        jellos = this.physics.add.group({
+            key: "red_star",
+            repeat: 2,
+            setXY: {x: 400, y: 300, stepX: 150, stepY: 200}
+        })
+
+        this.physics.add.collider(mouse, platforms);
+        this.physics.add.collider(cheeses, platforms);
+        this.physics.add.collider(bells, platforms);
+        this.physics.add.collider(shields, platforms);
+        this.physics.add.collider(hearts, platforms);
+        this.physics.add.collider(jellos, platforms);
+
+        this.physics.add.overlap(mouse, cheeses, collectCheese, null, this);
+        this.physics.add.collider(mouse, bells, hitBell, null, this);
+        this.physics.add.overlap(mouse, shields, collectShield, null, this);
+        this.physics.add.overlap(mouse, hearts, collectHeart, null, this);
+        this.physics.add.overlap(mouse, jellos, collectJello, null, this);
+    }
+
+    function update ()
+    {
+        if (cursors.left.isDown)
+        {
+            mouse.setVelocityX(-160);
+        }
+        else if (cursors.right.isDown)
+        {
+            mouse.setVelocityX(160);
+
+        }
+        else
+        {
+            mouse.setVelocityX(0);
+
+        }
+
+        if (cursors.up.isDown && mouse.body.touching.down)
+        {
+            mouse.setVelocityY(-330);
+        }
+
+        if (this.keys.s.isDown && mouse.body.touching.down && enableKey == true) {
+            enableKey = false;
+            if (shield_count > 0) {
+                hideything = this.physics.add.sprite(mouse.x, mouse.y, 'hideyobject');
+                this.physics.add.collider(hideything, platforms);
+                shield_count -= 1;
+                shieldText.setText('Shields: ' + shield_count);
+            }
+        }
+        if (this.keys.j.isDown && mouse.body.touching.down && enableKey == true) {
+            enableKey = false;
+            if(jello_count > 0) {
+                bells.getChildren().forEach(function(bell) {
+                    console.log(Phaser.Math.Distance.Chebyshev(mouse.x, mouse.y, bell.x, bell.y)); //for testing distance
+                    if(Phaser.Math.Distance.Chebyshev(mouse.x, mouse.y, bell.x, bell.y) <= 60) {
+                        jello_active = this.physics.add.sprite(bell.x, bell.y, 'jello');
+                        this.physics.add.collider(jello_active, platforms);
+                        bell.disableBody(true, true);
+                        this.physics.add.collider(mouse, jello_active, mouseBounce, null, this);
+                        jello_count -= 1;
+                        jelloText.setText('Jellos: ' + jello_count);
+                    }
+                }, this);
+            }
+        }
+        else if (this.keys.s.isUp && this.keys.j.isUp) {
+            enableKey = true;
+        }
+
+        if(score >= 100 && doorSpawned == false) { //just for the prototype
+            door = this.physics.add.sprite(700, 500, 'door');
+            this.physics.add.collider(door, platforms);
+            this.physics.add.collider(mouse, door, endLevel, null, this);
+            doorSpawned = true;
+        }
+    }
+
+    function collectCheese (mouse, cheese)
+    {
+        cheese.disableBody(true, true);
+
+        score += 10;
+        scoreText.setText('Score: ' + score);
+
+    }
+
+    function hitBell (mouse, bell)
+    {
+        if (life_count == 0) {
+            this.physics.pause();
+
+            mouse.setTint(0xff0000);
+
+            gameOver = true;
+        }
+        else {
+            bell.disableBody(true, true);
+            life_count -= 1;
+            lifeText.setText('Lives: ' + life_count);
+        }
+    }
+
+    function collectShield (mouse, shield) {
+        shield.disableBody(true, true);
+
+        shield_count += 1;
+        shieldText.setText('Shields: ' + shield_count);
+    }
+
+    function collectHeart (mouse, heart) {
+        heart.disableBody(true, true);
+
+        life_count += 1;
+        lifeText.setText('Lives: ' + life_count);
+    }
+
+    function mouseBounce(mouse, jello) {
+        mouse.setVelocityY(-500);
+    }
+
+    function endLevel() {
+        this.physics.pause();
+        mouse.setTint(0x00ff00);
+        gameOver = true;
+    }
+
+    function collectJello(mouse, jello) {
+        jello.disableBody(true, true);
+
+        jello_count += 1;
+        jelloText.setText('Jellos: ' + jello_count);
+    }
+
+</script>
+
+</body>
+</html>

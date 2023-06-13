@@ -1,0 +1,173 @@
+<!doctype html> 
+<html lang="en"> 
+<head> 
+    <meta charset="UTF-8" />
+    <title>CatNap Prototype</title>
+    <script src="//cdn.jsdelivr.net/npm/phaser@3.11.0/dist/phaser.js"></script>
+    <style type="text/css">
+        body {
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+
+<script type="text/javascript">
+
+var config = {
+        type: Phaser.AUTO,
+        width: 1100,
+        height: 700,
+        physics: {
+            default: 'arcade',
+            arcade: {
+                gravity: { y: 300 },
+                debug: false
+            }
+        },
+        scene: {
+            preload: preload,
+            create: create,
+            update: update
+        }
+    };
+
+    var mouse;
+    var cheeses;
+    var platforms;
+    var cursors;
+    var score = 0;
+    var scoreText;
+    var door;
+    var level = 1;
+
+    var game = new Phaser.Game(config);
+
+    function preload ()
+    {
+        this.load.image('ground', 'assets/greenGround.png');
+        this.load.image('platform', 'assets/whitePlatform.png');
+        this.load.image('cheese', 'assets/cheese.png');
+        this.load.image('mouse', 'assets/mouse.png');
+        this.load.image('bell', 'assets/bell.png');
+        this.load.image('door', 'assets/door.png');
+    }
+
+    function create ()
+    {
+
+        platforms = this.physics.add.staticGroup();
+
+        platforms.create(400, 730, 'ground').setScale(2).refreshBody();
+
+        platforms.create(450, 500, 'platform');
+        platforms.create(1000, 280, 'platform');
+        platforms.create(350, 160, 'platform');
+        platforms.create(150, 330, 'platform');
+
+        mouse = this.physics.add.sprite(100, 450, 'mouse');
+
+        mouse.setBounce(0.2);
+        mouse.setCollideWorldBounds(true);
+        cursors = this.input.keyboard.createCursorKeys();
+
+        cheeses = this.physics.add.group({
+            key: 'cheese',
+            repeat: 15,
+            setXY: { x: 12, y: 0, stepX: 70 }
+        });
+
+        cheeses.children.iterate(function (child) {
+
+            child.setBounceY(Phaser.Math.FloatBetween(0.4, 0.8));
+
+        });
+
+        scoreText = this.add.text(16, 655, 'score: 0', { fontSize: '32px', fill: '#999' });
+        levelText = this.add.text(300, 655, 'level: ' + level, { fontSize: '32px', fill: '#999' });
+
+        bells = this.physics.add.group({
+            key: "bell",
+            repeat: 2,
+            setXY: { x: 120, y: 0, stepX: 205}
+            
+        });
+
+        this.physics.add.collider(mouse, platforms);
+        this.physics.add.collider(cheeses, platforms);
+        this.physics.add.collider(bells, platforms);
+        
+
+        this.physics.add.overlap(mouse, cheeses, collectCheese, null, this);
+        this.physics.add.collider(mouse, bells, hitBell, null, this);
+    
+    }
+
+    function update ()
+    {
+        if (cursors.left.isDown)
+        {
+            mouse.setVelocityX(-300);
+        }
+        else if (cursors.right.isDown)
+        {
+            mouse.setVelocityX(300);
+        }
+        else
+        {
+            mouse.setVelocityX(0);
+        }
+
+        if (cursors.up.isDown && mouse.body.touching.down)
+        {
+            mouse.setVelocityY(-330);
+        }
+
+        if (cursors.down.isDown && !mouse.body.touching.down)
+        {
+            mouse.setVelocityY(450);
+        }
+
+    }
+
+    function collectCheese (mouse, cheese)
+    {
+        cheese.disableBody(true, true);
+
+        score += 10;
+        scoreText.setText('score: ' + score );
+
+        if (score == 160) {
+
+            door = this.physics.add.sprite(190, 240, 'door');
+            this.physics.add.collider(door, platforms);
+            this.physics.add.overlap(mouse, door, nextLevel, null, this);
+
+        }
+
+
+    }
+
+    function hitBell (mouse, bell)
+    {
+        this.physics.pause();
+
+        mouse.setTint(0xff0000);
+
+        gameOver = true;
+    }
+
+    function nextLevel (mouse, door)
+    {
+        this.scene.restart();
+        score = 0;
+        level += 1;
+
+    }
+
+
+
+</script>
+
+</body>
+</html>

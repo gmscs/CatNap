@@ -1,0 +1,55 @@
+<!doctype html> 
+<html lang="en"> 
+<head> 
+    <meta charset="UTF-8" />
+    <title>CatNap Prototype</title>
+    <script src="phaser.min.js"></script>
+    <script src="variables.js"></script>
+    <script src="boosters.js"></script>
+    <script src="functionality.js"></script>
+    <script src="Grid.js"></script>
+    <script src="levels.js"></script>
+    <script src="game.js"></script>
+    <script src="start.js"></script>
+    <script src="highscore.js"></script>
+    <script src="help.js"></script>
+    <script src="telemetry.js"></script>
+    <script src="credits.js"></script>
+    <style type="text/css">
+        body {
+            margin: 0;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            -ms-transform: translate(-50%, -50%);
+            transform: translate(-50%, -50%);
+        }
+        .tab {
+            display: inline-block;
+            margin-left: 40px;
+        }
+    </style>
+</head>
+<body>
+
+<script type="text/javascript">
+    
+    var config = {
+        type: Phaser.AUTO,
+        width: 1100,
+        height: 700,
+        physics: {
+            default: 'arcade',
+            arcade: {
+                gravity: { y: 300 },
+                debug: false
+            }
+        },
+        scene: [ Start, CatNap, HighScore, Help, Credits ]
+    };
+
+    game = new Phaser.Game(config);
+    
+</script>
+</body>
+</html>
